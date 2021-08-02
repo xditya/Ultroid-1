@@ -28,7 +28,7 @@
 • `{i}pinned`
    Get pinned message in the current chat.
 
-• `{i}autodelete <24h/7d/off>`
+• `{i}autodelete <24h/7d/1m/off>`
    Enable Auto Delete Messages in Chat.
 
 • `{i}listpinned`
@@ -85,13 +85,12 @@ async def prmte(ult):
                 rank,
             ),
         )
-        await xx.edit(
+        await eod(
+            xx,
             f"{inline_mention(user)} `is now an admin in {ult.chat.title} with title {rank}.`",
         )
     except BadRequestError:
         return await xx.edit("`I don't have the right to promote you.`")
-    await asyncio.sleep(5)
-    await xx.delete()
 
 
 @ultroid_cmd(
@@ -124,13 +123,12 @@ async def dmote(ult):
                 rank,
             ),
         )
-        await xx.edit(
+        await eod(
+            xx,
             f"{inline_mention(user)} `is no longer an admin in {ult.chat.title}`",
         )
     except BadRequestError:
         return await xx.edit("`I don't have the right to demote you.`")
-    await asyncio.sleep(5)
-    await xx.delete()
 
 
 @ultroid_cmd(
@@ -215,7 +213,7 @@ async def kck(ult):
         return await xx.edit("`You Can't kick that powerhouse`")
     try:
         await ult.client.kick_participant(ult.chat_id, user.id)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.9)
     except BadRequestError:
         return await xx.edit("`I don't have the right to kick a user.`")
     except Exception as e:
@@ -243,11 +241,7 @@ async def pin(msg):
     if not msg.client._bot and not msg.is_private and not isinstance(msg.chat, Chat):
         link = (await msg.client(ExpLink(msg.chat_id, xx))).link
         f"`Pinned` [This Message]({link})"
-    ch = msg.pattern_match.group(1)
-    if ch != "silent":
-        pass
-    else:
-        pass
+    msg.pattern_match.group(1)
     try:
         await msg.client.pin_message(msg.chat_id, xx, notify=False)
     except BadRequestError:
@@ -433,16 +427,18 @@ async def get_all_pinned(event):
 )
 async def autodelte(ult):  # Tg Feature
     match = ult.pattern_match.group(1)
-    if not match or match not in ["24h", "7d", "off"]:
+    if not match or match not in ["24h", "7d", "1m", "off"]:
         return await eod(ult, "`Please Use Proper Format..`")
     if match == "24h":
         tt = 3600 * 24
     elif match == "7d":
         tt = 3600 * 24 * 7
+    elif match == "1m":
+        tt = 3600 * 24 * 31
     else:
         tt = 0
     try:
         await ult.client(SetHistoryTTLRequest(ult.chat_id, period=tt))
     except ChatNotModifiedError:
         return await eod(ult, f"Auto Delete Setting is Already same to `{match}`")
-    await eor(ult, f"Auto Delete Status Changed to {match} !")
+    await eor(ult, f"Auto Delete Status Changed to `{match}` !")

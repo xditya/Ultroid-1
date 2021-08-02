@@ -7,7 +7,7 @@
 
 from . import *
 
-
+"""
 @asst.on_message(
     filters.command(["listvc", f"listvc@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -29,3 +29,4 @@ async def list_handler(_, message):
 )
 async def llhnf(_, message):
     await list_handler(_, message)
+"""

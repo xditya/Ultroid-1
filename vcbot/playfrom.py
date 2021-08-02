@@ -7,7 +7,7 @@
 
 from . import *
 
-
+"""
 @asst.on_message(
     filters.command(["playfrom", f"playfrom@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -82,3 +82,4 @@ async def PlayFrom(client, message):
 @Client.on_message(filters.me & filters.command("playfrom") & ~filters.edited)
 async def pleya(_, message):
     await PlayFrom(_, message)
+"""

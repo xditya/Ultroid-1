@@ -12,47 +12,26 @@ import asyncio
 import os
 import re
 from datetime import datetime as dt
-
-import ffmpeg
-from pyrogram import Client, filters
-from pyrogram.raw import functions
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from pytgcalls import StreamType
-from pyUltroid import HNDLR, CallsClient
-from pyUltroid import asst as tele_asst
-from pyUltroid import udB, ultroid_bot
-from pyUltroid import vcasst as asst
+from telethon import events
+from pyUltroid import asst, vcClient, udB
+import pytgcalls
 from pyUltroid.functions.all import bash, dler, time_formatter
 from pyUltroid.misc import sudoers
 from youtube_dl import YoutubeDL
 from youtubesearchpython import VideosSearch
 
-Client = CallsClient._app
-
 LOG_CHANNEL = int(udB.get("LOG_CHANNEL"))
 QUEUE = {}
 
 _yt_base_url = "https://www.youtube.com/watch?v="
-vcusername = tele_asst.me.username
+vcusername = asst.me.username
 
+CallsClient = pytgcalls.GroupCallFactory(vcClient, pytgcalls.GroupCallFactory.MTPROTO_CLIENT_TYPE.TELETHON).get_file_group_call()
 
 def VC_AUTHS():
     _vc_sudos = udB.get("VC_SUDOS").split() if udB.get("VC_SUDOS") else ""
     A_AUTH = [udB["OWNER_ID"], *sudoers(), *_vc_sudos]
-    AUTH = [int(x) for x in A_AUTH]
-    return AUTH
-
-
-def reply_markup(chat_id: int):
-    return InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton("Pause", callback_data=f"vcp_{chat_id}"),
-                InlineKeyboardButton("Skip", callback_data=f"skip_{chat_id}"),
-            ],
-            [InlineKeyboardButton("Exit", callback_data=f"ex_{chat_id}")],
-        ]
-    )
+    return [int(x) for x in A_AUTH]
 
 
 def add_to_queue(chat_id, song, song_name, from_user, duration):
@@ -114,8 +93,8 @@ async def eor(message, text, *args, **kwargs):
     return await message.reply_text(text, *args, **kwargs)
 
 
-async def download(event, query, chat, ts):
-    song = f"VCSONG_{chat}_{ts}.raw"
+async def download(event, query, chat):
+    song = f"VCSONG_{chat}.raw"
     search = VideosSearch(query, limit=1).result()
     noo = search["result"][0]
     vid_id = noo["id"]
@@ -139,6 +118,8 @@ async def download(event, query, chat, ts):
     await bash(f'ffmpeg -i "{dl}" -f s16le -ac 1 -acodec pcm_s16le -ar 48000 {song} -y')
     return song, thumb, title, duration
 
+"""
+idk wtf this is.
 
 async def vc_check(chat, chat_type):
     if chat_type in ["supergroup", "channel"]:
@@ -152,3 +133,14 @@ async def vc_check(chat, chat_type):
     if not chat.full_chat.call:
         return False
     return True
+
+"""
+
+def vc_asst(dec):
+    def ult(func):
+        pattern = "^/" + dec  # todo - handlers for assistant?
+        asst.add_event_handler(
+            func, events.NewMessage(incoming=True, pattern=pattern, from_users=VC_AUTHS())
+        )
+        asst.add_event_handler(func, events.NewMessage(incoming=True, pattern=pattern + f"@{vcusername}", from_users=VC_AUTHS()))
+    return ult

@@ -16,7 +16,6 @@ from pyUltroid.functions.all import *
 from telethon import Button
 from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
 from telethon.tl.types import InputWebDocument as wb
-from youtube_dl import YoutubeDL
 from youtubesearchpython import VideosSearch
 
 ytt = "https://telegra.ph/file/afd04510c13914a06dd03.jpg"
@@ -24,6 +23,7 @@ _yt_base_url = "https://www.youtube.com/watch?v="
 
 
 @in_pattern("yt")
+@in_owner
 async def _(event):
     try:
         string = event.text.split(" ", maxsplit=1)[1]
@@ -128,8 +128,7 @@ async def _(event):
             "quiet": True,
             "logtostderr": False,
         }
-        ytdl_data = await dler(event, link)
-        YoutubeDL(opts).download([link])
+        ytdl_data = await dler(event, link, opts, True)
         title = ytdl_data["title"]
         artist = ytdl_data["uploader"]
         views = numerize.numerize(ytdl_data["view_count"])
@@ -159,8 +158,7 @@ async def _(event):
             "logtostderr": False,
             "quiet": True,
         }
-        ytdl_data = await dler(event, link)
-        YoutubeDL(opts).download([link])
+        ytdl_data = await dler(event, link, opts, True)
         title = ytdl_data["title"]
         artist = ytdl_data["uploader"]
         views = numerize.numerize(ytdl_data["view_count"])

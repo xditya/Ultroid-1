@@ -4,7 +4,7 @@
 # This file is a part of < https://github.com/TeamUltroid/Ultroid/ >
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
-
+"""
 from pyrogram.raw import functions
 
 from . import *
@@ -52,3 +52,4 @@ async def chesendvolume(_, message):
 @Client.on_message(filters.me & filters.command("volume", HNDLR) & ~filters.edited)
 async def volplay(_, message):
     await chesendvolume(_, message)
+"""

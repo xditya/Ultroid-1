@@ -5,13 +5,37 @@
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
 
-import asyncio
 import os
 import random
 
 from . import *
 
-
+@vc_asst("play")
+async def join_handler(event):
+    xqsong = event.text.split(' ', 1)
+    try:
+        qsong = xqsong[1]
+    except IndexError:
+        repl = await event.get_reply_message()
+        qsong = ""
+    if not (qsong or repl and repl.file):
+        return await event.reply("Please give a song name.")
+    x = await event.reply("Downloading...")
+    if qsong:
+        song, thumb, title, duration = await download(event, qsong, event.chat_id)
+    else:
+        dl = await repl.download_media()
+        song = f"VCSONG_{event.chat_id}.raw"
+        await bash(f"ffmpeg -i {dl} -f s16le -ac 2 -ar 48000 -acodec pcm_s16le {song}")
+        thumb = await repl.download_media(thumb=-1) if thumb else None
+        title, duration = repl.file.title, repl.duration
+    CallsClient.input_file_name = song
+    await x.delete()
+    await event.reply(
+        "Started playing {} in {}.\nDuration: {}".format(title, event.chat_id, duration), file=thumb
+    )
+    
+"""
 @asst.on_message(
     filters.command(["play", f"play@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -101,20 +125,23 @@ async def cstartup(_, message):
 async def queue_func(chat_id: int):
     try:
         song, title, from_user, pos, dur = get_from_queue(chat_id)
-        CallsClient.change_stream(chat_id, song)
-       #CallsClient._add_active_call(chat_id)
+        if chat_id in CallsClient.active_calls.keys():
+            CallsClient.change_stream(chat_id, song)
+        else:
+            CallsClient.join_group_call(chat_id, song)
         xx = await asst.send_message(
             chat_id,
             f"**Playing :** {title}\n**Duration** : {time_formatter(dur*1000)}\n**Requested by**: {from_user}",
             reply_markup=reply_markup(chat_id),
         )
         QUEUE[chat_id].pop(pos)
-        if not QUEUE[chat_id]:
-            QUEUE.pop(chat_id)
-        await asyncio.sleep(dur + 5)
-     #   CallsClient._remove_active_call(chat_id)
+        await asyncio.sleep(dur)
+        os.remove(song)
+        if chat_id in CallsClient.active_calls.keys():
+            CallsClient.active_calls.pop(chat_id)
         await xx.delete()
-    except (IndexError, KeyError):
+    except (IndexError, KeyError) as Ec:
+        LOGS.info(Ec)
         CallsClient.leave_group_call(chat_id)
     except Exception as ap:
         await asst.send_message(chat_id, f"`{str(ap)}`")
@@ -123,3 +150,4 @@ async def queue_func(chat_id: int):
 @CallsClient.on_stream_end()
 async def streamhandler(chat_id: int):
     await queue_func(chat_id)
+"""

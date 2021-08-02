@@ -7,7 +7,7 @@
 
 from . import *
 
-
+""""""
 @asst.on_message(
     filters.command(["stop", f"stop@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -54,3 +54,4 @@ async def resume_vc(_, message):
 )
 async def vcresume(_, message):
     await resume_vc(_, message)
+"""

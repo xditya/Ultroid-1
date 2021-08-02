@@ -10,6 +10,9 @@
 • `{i}setgpic <reply to Photo>`
     Set Profile photo of Group.
 
+• `{i}delgpic`
+    Delete Profile photo of Group.
+
 • `{i}unbanall`
     Unban all Members of a group.
 
@@ -36,14 +39,14 @@ async def _(ult):
     if not ult.is_reply:
         return await eod(ult, "`Reply to a Media..`")
     reply_message = await ult.get_reply_message()
-    try:
+    if reply_message.media:
         replfile = await reply_message.download_media()
-    except AttributeError:
-        return await eor(ult, "Reply to a Photo..")
+    else:
+        return await eor(ult, "Reply to a Photo or Video..")
     file = await ult.client.upload_file(replfile)
     mediain = mediainfo(reply_message.media)
     try:
-        if "pic" in mediain:
+        if "pic" or "video" or "gif" in mediain:
             await ult.client(EditPhotoRequest(ult.chat_id, file))
         else:
             return await eod(ult, "`Invalid MEDIA Type !`")
@@ -51,6 +54,16 @@ async def _(ult):
     except Exception as ex:
         await eod(ult, "Error occured.\n`{}`".format(str(ex)))
     os.remove(replfile)
+
+
+@ultroid_cmd(pattern="delgpic$", groups_only=True, admins_only=True)
+async def _(ult):
+    try:
+        await ult.client(EditPhotoRequest(ult.chat_id, types.InputChatPhotoEmpty()))
+        text = "`Removed Chat Photo..`"
+    except Exception as E:
+        text = str(E)
+    return await eod(ult, text)
 
 
 @ultroid_cmd(
@@ -226,4 +239,4 @@ async def _(event):
         required_string += f"  `{HNDLR}rmusers none`  **••**  `{n}`\n\n"
         required_string += f"**••Empty**  `Name with deleted Account`\n"
         required_string += f"**••None**  `Last Seen A Long Time Ago`\n"
-    await eod(xx, required_string)
+    await eor(xx, required_string)

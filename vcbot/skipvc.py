@@ -8,7 +8,7 @@
 from . import *
 from .play import queue_func
 
-
+""""""
 @asst.on_message(
     filters.command(["skip", f"skip@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -31,3 +31,4 @@ async def skiplife(_, message):
 )
 async def vc_skipe(_, message):
     await skiplife(_, message)
+"""

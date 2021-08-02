@@ -7,7 +7,11 @@
 
 from . import *
 
-
+@vc_asst("stop")
+async def stop_vc(event):
+    CallsClient.stop_playout()
+    
+""" 
 @asst.on_message(
     filters.command(["leave", f"leave@{vcusername}"])
     & filters.user(VC_AUTHS())
@@ -34,3 +38,4 @@ async def leavehandler(_, message):
 @Client.on_message(filters.me & filters.command("leavevc", HNDLR) & ~filters.edited)
 async def lhandler(_, message):
     await leavehandler(_, message)
+"""
