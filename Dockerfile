@@ -16,5 +16,8 @@ RUN bash installer.sh
 # changing workdir
 WORKDIR "/root/TeamUltroid"
 
+RUN ls
+RUN cd Ultroid
+
 # start the bot.
-CMD ["python", "-m", "pyUltroid"]
+CMD ["bash", "startup"]
