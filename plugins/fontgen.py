@@ -4,17 +4,14 @@
 # This file is a part of < https://github.com/TeamUltroid/Ultroid/ >
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
-"""
-• `{i}font <font name> : <text>`
-    Generate different fonts for the text.
 
-• `{i}font`
-    To get list of fonts
-"""
+from . import get_help
+
+__doc__ = get_help("help_fontgen")
 
 import string
 
-from . import HNDLR, eod, ultroid_cmd
+from . import eod, ultroid_cmd
 
 _default = string.ascii_letters
 Fonts = {
@@ -31,7 +28,6 @@ Fonts = {
 async def _(e):
     input = e.pattern_match.group(1).strip()
     reply = await e.get_reply_message()
-    help = __doc__.format(i=HNDLR)
     if not input:
         m = "**Available Fonts**\n\n"
         for x in Fonts.keys():

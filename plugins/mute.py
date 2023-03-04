@@ -26,10 +26,11 @@
     d- days
     Mute user in current chat with time.
 """
-from pyUltroid.dB.mute_db import is_muted, mute, unmute
-from pyUltroid.functions.admins import ban_time
 from telethon import events
 from telethon.utils import get_display_name
+
+from pyUltroid.dB.mute_db import is_muted, mute, unmute
+from pyUltroid.fns.admins import ban_time
 
 from . import asst, eod, get_string, inline_mention, ultroid_bot, ultroid_cmd
 
@@ -47,8 +48,7 @@ async def watcher(event):
 )
 async def startmute(event):
     xx = await event.eor("`Muting...`")
-    input_ = event.pattern_match.group(1).strip()
-    if input_:
+    if input_ := event.pattern_match.group(1).strip():
         try:
             userid = await event.client.parse_id(input_)
         except Exception as x:
@@ -79,8 +79,7 @@ async def startmute(event):
 )
 async def endmute(event):
     xx = await event.eor("`Unmuting...`")
-    input_ = event.pattern_match.group(1).strip()
-    if input_:
+    if input_ := event.pattern_match.group(1).strip():
         try:
             userid = await event.client.parse_id(input_)
         except Exception as x:
@@ -110,23 +109,23 @@ async def _(e):
     except IndexError:
         return await xx.eor("`Time till mute?`", time=5)
     try:
-        input = huh[2]
+        input_ = huh[2]
     except IndexError:
-        pass
+        input_ = ""
     chat = await e.get_chat()
     if e.reply_to_msg_id:
         reply = await e.get_reply_message()
         userid = reply.sender_id
         name = (await reply.get_sender()).first_name
-    elif input:
-        userid = await e.client.parse_id(input)
+    elif input_:
+        userid = await e.client.parse_id(input_)
         name = (await e.client.get_entity(userid)).first_name
     else:
         return await xx.eor(get_string("tban_1"), time=3)
     if userid == ultroid_bot.uid:
         return await xx.eor("`I can't mute myself.`", time=3)
     try:
-        bun = ban_time(xx, tme)
+        bun = ban_time(tme)
         await e.client.edit_permissions(
             chat.id,
             userid,

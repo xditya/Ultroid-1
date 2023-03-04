@@ -18,6 +18,8 @@
 """
 import os
 
+from pyUltroid import ULTConfig
+
 try:
     import cv2
 except ImportError:
@@ -26,9 +28,8 @@ except ImportError:
 import qrcode
 from PIL import Image
 from telethon.tl.types import MessageMediaDocument as doc
-from telethon.tl.types import MessageMediaPhoto as photu
 
-from . import get_string, ultroid_bot, ultroid_cmd
+from . import check_filename, get_string, ultroid_bot, ultroid_cmd
 
 
 @ultroid_cmd(pattern="qrcode( (.*)|$)")
@@ -39,11 +40,14 @@ async def cd(e):
         msg = reply.text
     elif not msg:
         return await e.eor("`Give Some Text or Reply", time=5)
+    default, cimg = ULTConfig.thumb, None
+    if reply and (reply.sticker or reply.photo):
+        cimg = await reply.download_media()
+    elif ultroid_bot.me.photo and not ultroid_bot.me.photo.has_video:
+        cimg = await e.client.get_profile_photos(ultroid_bot.uid, limit=1)[0]
+
     kk = await e.eor(get_string("com_1"))
-    pfp = await e.client.get_profile_photos(ultroid_bot.uid)
-    img = "resources/extras/teamultroid.jpg"
-    if len(pfp) >= 1:
-        img = await e.client.download_media(pfp[0])
+    img = cimg or default
     ok = Image.open(img)
     logo = ok.resize((60, 60))
     cod = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H)
@@ -52,21 +56,23 @@ async def cd(e):
     imgg = cod.make_image().convert("RGB")
     pstn = ((imgg.size[0] - logo.size[0]) // 2, (imgg.size[1] - logo.size[1]) // 2)
     imgg.paste(logo, pstn)
-    imgg.save(img)
-    await e.client.send_file(e.chat_id, img, supports_streaming=True)
+    newname = check_filename("qr.jpg")
+    imgg.save(newname)
+    await e.client.send_file(e.chat_id, newname, supports_streaming=True)
     await kk.delete()
-    os.remove(img)
+    os.remove(newname)
+    if cimg:
+        os.remove(cimg)
 
 
 @ultroid_cmd(pattern="addqr( (.*)|$)")
 async def qrwater(e):
     msg = e.pattern_match.group(1).strip()
     r = await e.get_reply_message()
-    if isinstance(r.media, photu):
-        dl = await e.client.download_media(r.media)
-    elif isinstance(r.media, doc):
-        dl = await e.client.download_media(r, thumb=-1)
-    else:
+    dl = await e.client.download_media(
+        r, thumb=-1 if isinstance(r.media, doc) else None
+    )
+    if not dl:
         return await e.eor("`Reply Any Media and Give Text`", time=5)
     kk = await e.eor(get_string("com_1"))
     img_bg = Image.open(dl)
@@ -88,11 +94,10 @@ async def decod(e):
     if not (r and r.media):
         return await e.eor("`Reply to Qrcode Media`", time=5)
     kk = await e.eor(get_string("com_1"))
-    if isinstance(r.media, photu):
-        dl = await r.download_media()
-    elif isinstance(r.media, doc):
-        dl = await r.download_media(thumb=-1)
-    else:
+    dl = await e.client.download_media(
+        r, thumb=-1 if isinstance(r.media, doc) else None
+    )
+    if not dl:
         return
     im = cv2.imread(dl)
     try:

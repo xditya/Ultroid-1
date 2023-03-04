@@ -11,9 +11,6 @@
 
 import os
 
-from pyUltroid.dB.asst_fns import *
-from pyUltroid.dB.botchat_db import *
-from pyUltroid.functions.helper import inline_mention
 from telethon.errors.rpcerrorlist import UserNotParticipantError
 from telethon.tl.custom import Button
 from telethon.tl.functions.channels import GetFullChannelRequest
@@ -21,8 +18,13 @@ from telethon.tl.functions.messages import GetFullChatRequest
 from telethon.tl.types import Channel, Chat
 from telethon.utils import get_display_name
 
+from pyUltroid.dB.base import KeyManager
+from pyUltroid.dB.botchat_db import *
+from pyUltroid.fns.helper import inline_mention
+
 from . import *
 
+botb = KeyManager("BOTBLS", cast=list)
 FSUB = udB.get_key("PMBOT_FSUB")
 CACHE = {}
 # --------------------------------------- Incoming -------------------------------------------- #
@@ -31,7 +33,7 @@ CACHE = {}
 @asst_cmd(
     load=AST_PLUGINS,
     incoming=True,
-    func=lambda e: e.is_private and not is_blacklisted(e.sender_id),
+    func=lambda e: e.is_private and not botb.contains(e.sender_id),
 )
 async def on_new_mssg(event):
     who = event.sender_id
@@ -48,9 +50,10 @@ async def on_new_mssg(event):
                 if not MSG:
                     MSG += get_string("pmbot_1")
                 try:
+                    uri = ""
                     TAHC_ = await event.client.get_entity(chat)
                     if hasattr(TAHC_, "username") and TAHC_.username:
-                        uri = "t.me/" + TAHC_.username
+                        uri = f"t.me/{TAHC_.username}"
                     elif CACHE.get(chat):
                         uri = CACHE[chat]
                     else:
@@ -98,7 +101,7 @@ async def on_out_mssg(event):
                 os.remove(photu)
             return
         except BaseException as er:
-            return await event.reply("**ERROR : **" + str(er))
+            return await event.reply(f"**ERROR : **{str(er)}")
     elif event.text.startswith("/"):
         return
     if to_user:
@@ -118,10 +121,10 @@ async def banhammer(event):
     if not event.is_reply:
         return await event.reply(get_string("pmbot_2"))
     target = get_who(event.reply_to_msg_id)
-    if is_blacklisted(target):
+    if botb.contains(target):
         return await event.reply(get_string("pmbot_3"))
 
-    blacklist_user(target)
+    botb.add(target)
     await event.reply(f"#BAN\nUser : {target}")
     await asst.send_message(target, get_string("pmbot_4"))
 
@@ -136,10 +139,10 @@ async def unbanhammer(event):
     if not event.is_reply:
         return await event.reply(get_string("pmbot_5"))
     target = get_who(event.reply_to_msg_id)
-    if not is_blacklisted(target):
+    if not botb.contains(target):
         return await event.reply(get_string("pmbot_6"))
 
-    rem_blacklist(target)
+    botb.remove(target)
     await event.reply(f"#UNBAN\nUser : {target}")
     await asst.send_message(target, get_string("pmbot_7"))
 

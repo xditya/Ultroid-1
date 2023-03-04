@@ -17,9 +17,14 @@ import glob
 import os
 import random
 
-from pyUltroid.functions.misc import unsplashsearch
-from pyUltroid.functions.tools import LogoHelper
 from telethon.tl.types import InputMessagesFilterPhotos
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+from pyUltroid.fns.misc import unsplashsearch
+from pyUltroid.fns.tools import LogoHelper
 
 from . import OWNER_ID, OWNER_NAME, download_file, get_string, mediainfo, ultroid_cmd
 
@@ -29,7 +34,7 @@ async def logo_gen(event):
     xx = await event.eor(get_string("com_1"))
     name = event.pattern_match.group(1).strip()
     if not name:
-        await xx.eor("`Give a name too!`", time=5)
+        return await xx.eor("`Give a name too!`", time=5)
     bg_, font_ = None, None
     if event.reply_to_msg_id:
         temp = await event.get_reply_message()
@@ -44,9 +49,22 @@ async def logo_gen(event):
                 bg_ = await temp.download_media()
     if not bg_:
         if event.client._bot:
-            SRCH = ["blur background", "background", "neon lights", "wallpaper"]
+            SRCH = [
+                "blur background",
+                "background",
+                "neon lights",
+                "nature",
+                "abstract",
+                "space",
+                "3d render",
+            ]
             res = await unsplashsearch(random.choice(SRCH), limit=1)
-            bg_ = await download_file(res[0], "resources/downloads/logo.png")
+            bg_, _ = await download_file(res[0], "resources/downloads/logo.png")
+            newimg = "resources/downloads/unsplash-temp.jpg"
+            img_ = Image.open(bg_)
+            img_.resize((5000, 5000)).save(newimg)
+            os.remove(bg_)
+            bg_ = newimg
         else:
             pics = []
             async for i in event.client.iter_messages(
@@ -65,7 +83,7 @@ async def logo_gen(event):
         strke = 5
     else:
         strke = 20
-    LogoHelper.make_logo(
+    name = LogoHelper.make_logo(
         bg_,
         name,
         font_,
@@ -73,16 +91,14 @@ async def logo_gen(event):
         stroke_width=strke,
         stroke_fill="black",
     )
-    flnme = "Logo.png"
     await xx.edit("`Done!`")
-    if os.path.exists(flnme):
-        await event.client.send_file(
-            event.chat_id,
-            file=flnme,
-            caption=f"Logo by [{OWNER_NAME}](tg://user?id={OWNER_ID})",
-            force_document=True,
-        )
-        os.remove(flnme)
-        await xx.delete()
+    await event.client.send_file(
+        event.chat_id,
+        file=name,
+        caption=f"Logo by [{OWNER_NAME}](tg://user?id={OWNER_ID})",
+        force_document=True,
+    )
+    os.remove(name)
+    await xx.delete()
     if os.path.exists(bg_):
         os.remove(bg_)

@@ -1,7 +1,7 @@
 {
     "name": "Ultroid UserBot",
     "description": "Pluggable telegram userbot, made in python using Telethon.",
-    "logo": "https://telegra.ph/file/031957757a4f6a5191040.jpg",
+    "logo": "https://graph.org/file/031957757a4f6a5191040.jpg",
     "keywords": [
         "Telethon",
         "telegram",
@@ -11,7 +11,7 @@
     ],
     "repository": "https://github.com/TeamUltroid/Ultroid",
     "website": "https://ultroid.tech",
-    "success_url": "https://t.me/TheUltroid",
+    "success_url": "https://t.me/TeamUltroid",
     "stack": "container",
     "env": {
         "API_ID": {
@@ -25,7 +25,7 @@
             "required": false
         },
         "SESSION": {
-            "description": "Your session string. Can be added now, or after deploy. (The bot will NOT work without a session string!!)",
+            "description": "Session String (telethon or pyrogram) for your telegram user account. The userbot will NOT work without a session string!!",
             "value": ""
         },
         "REDIS_URI": {
@@ -50,7 +50,7 @@
     "formation": {
         "ultroid": {
             "quantity": 1,
-            "size": "free"
+            "size": "eco"
         }
     }
 }

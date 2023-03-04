@@ -8,21 +8,22 @@
 ✘ Commands Available -
 
 • `{i}pdf <page num> <reply to pdf file>`
-    Extract nd Send page as a Image.(note-: For Extraction all pages just use .pdf)
-    You Can use multi pages too like `{i}pdf 1-7`
+    Extract & send page as an Image.(note-: For extracting all pages, just use .pdf)
+    to upload selected range `{i}pdf 1-7`
 
 • `{i}pdtext <page num> <reply to pdf file>`
     Extract Text From the Pdf.(note-: For Extraction all text just use .pdtext)
-    You Can use multi pages too like `{i}pdf 1-7`
+    to extract selected pages `{i}pdf 1-7`
 
 • `{i}pdscan <reply to image>`
-    It scan, crop nd send img as pdf.
+    It scan, crop & send image(s) as pdf.
 
 • `{i}pdsave <reply to image/pdf>`
-    It scan, crop nd save file to merge u can merge many pages as a single pdf.
+    It scan, crop & save file to merge.
+    you can merge many pages in a single pdf.
 
 • `{i}pdsend `
-    Merge nd send the Pdf to collected from .pdsave.
+    Merge & send the pdf, collected from .pdsave.
 """
 import glob
 import os
@@ -38,11 +39,20 @@ except ImportError:
     Image = None
     LOGS.info(f"{__file__}: PIL  not Installed.")
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
-from pyUltroid.functions.tools import four_point_transform
-from skimage.filters import threshold_local
 from telethon.errors.rpcerrorlist import PhotoSaveFileInvalidError
 
-from . import HNDLR, check_filename, downloader, eor, get_string, ultroid_cmd
+from pyUltroid.fns.tools import four_point_transform
+
+from . import (
+    HNDLR,
+    LOGS,
+    bash,
+    check_filename,
+    downloader,
+    eor,
+    get_string,
+    ultroid_cmd,
+)
 
 if not os.path.isdir("pdf"):
     os.mkdir("pdf")
@@ -62,12 +72,9 @@ async def pdfseimg(event):
     k = time.time()
     filename = "hehe.pdf"
     result = await downloader(
-        "pdf/" + filename,
-        file,
-        xx,
-        k,
-        "Downloading " + filename + "...",
+        f"pdf/{filename}", file, xx, k, f"Downloading {filename}..."
     )
+
     await xx.delete()
     pdfp = "pdf/hehe.pdf"
     pdfp.replace(".pdf", "")
@@ -77,7 +84,7 @@ async def pdfseimg(event):
         for num in range(pdf.numPages):
             pw = PdfFileWriter()
             pw.addPage(pdf.getPage(num))
-            fil = os.path.join("pdf/ult{}.png".format(num + 1))
+            fil = os.path.join(f"pdf/ult{num + 1}.png")
             ok.append(fil)
             with open(fil, "wb") as f:
                 pw.write(f)
@@ -126,13 +133,7 @@ async def pdfsetxt(event):
     file = ok.media.document
     k = time.time()
     filename = ok.file.name
-    result = await downloader(
-        filename,
-        file,
-        xx,
-        k,
-        "Downloading " + filename + "...",
-    )
+    result = await downloader(filename, file, xx, k, f"Downloading {filename}...")
     await xx.delete()
     dl = result.name
     if not msg:
@@ -142,7 +143,7 @@ async def pdfsetxt(event):
             for page_num in range(pdf.numPages):
                 pageObj = pdf.getPage(page_num)
                 txt = pageObj.extractText()
-                f.write("Page {}\n".format(page_num + 1))
+                f.write(f"Page {page_num + 1}\n")
                 f.write("".center(100, "-"))
                 f.write(txt)
         await event.client.send_file(
@@ -183,11 +184,13 @@ async def imgscan(event):
     if not (ok and (ok.media)):
         await event.eor("`Reply The pdf u Want to Download..`")
         return
-    ultt = await ok.download_media()
-    if not ultt.endswith(("png", "jpg", "jpeg", "webp")):
+    if not (
+        ok.photo
+        or (ok.file.name and ok.file.name.endswith(("png", "jpg", "jpeg", "webp")))
+    ):
         await event.eor("`Reply to a Image only...`")
-        os.remove(ultt)
         return
+    ultt = await ok.download_media()
     xx = await event.eor(get_string("com_1"))
     image = cv2.imread(ultt)
     original_image = image.copy()
@@ -214,6 +217,14 @@ async def imgscan(event):
         cv2.drawContours(image, sortedPoly[0], -1, (0, 0, 255), 5)
         simplified_cnt = sortedPoly[0]
     if len(simplified_cnt) == 4:
+        try:
+            from skimage.filters import threshold_local
+        except ImportError:
+            LOGS.info(f"Scikit-Image is not Installed.")
+            await xx.edit("`Installing Scikit-Image...\nThis may take some long...`")
+            _, __ = await bash("pip install scikit-image")
+            LOGS.info(_)
+            from skimage.filters import threshold_local
         cropped_image = four_point_transform(
             original_image,
             simplified_cnt.reshape(4, 2) * ratio,
@@ -275,6 +286,16 @@ async def savepdf(event):
             cv2.drawContours(image, sortedPoly[0], -1, (0, 0, 255), 5)
             simplified_cnt = sortedPoly[0]
         if len(simplified_cnt) == 4:
+            try:
+                from skimage.filters import threshold_local
+            except ImportError:
+                LOGS.info(f"Scikit-Image is not Installed.")
+                await xx.edit(
+                    "`Installing Scikit-Image...\nThis may take some long...`"
+                )
+                _, __ = await bash("pip install scikit-image")
+                LOGS.info(_)
+                from skimage.filters import threshold_local
             cropped_image = four_point_transform(
                 original_image,
                 simplified_cnt.reshape(4, 2) * ratio,

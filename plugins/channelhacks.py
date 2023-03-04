@@ -4,67 +4,34 @@
 # This file is a part of < https://github.com/TeamUltroid/Ultroid/ >
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
-"""
-✘ Commands Available
+from . import get_help
 
-🔹 `{i}shift <from channel> | <to channel>`
-     This will transfer all old post from channel A to channel B.
-      (u can use username or id of channel too)
-      example : `{i}shift @abc | @xyz`
-      [note - this (" | ") sign is nessesary]
+__doc__ = get_help("help_channelhacks")
 
-🔹 For auto-posting/forwarding all new message from any source channel to any destination channel.
-
-   `{i}asource <channel username or id>`
-      This add source channel to database
-   `{i}dsource <channel username or id>`
-      This remove source channels from database
-   `{i}listsource <channel username or id>`
-      Show list of source channels
-
-
-   `{i}adest <channel username or id>`
-      This add Ur channels to database
-   `{i}ddest <channel username or id>`
-      This Remove Ur channels from database
-   `{i}listdest <channel username or id>`
-      Show List of Ur channels
-
-   'you can set many channels in database'
-   'For activating auto-post use `{i}setdb AUTOPOST True` '
-"""
 
 import asyncio
 import io
 
-from pyUltroid.dB.ch_db import (
-    add_destination,
-    add_source_channel,
-    get_destinations,
-    get_no_destinations,
-    get_no_source_channels,
-    get_source_channels,
-    is_destination_added,
-    is_source_channel_added,
-    rem_destination,
-    rem_source_channel,
-)
 from telethon.errors.rpcerrorlist import FloodWaitError
 from telethon.utils import get_display_name, get_peer_id
+
+from pyUltroid.dB.base import KeyManager
 
 from . import LOGS, asst, eor, events, get_string, udB, ultroid_bot, ultroid_cmd
 
 ERROR = {}
+SourceM = KeyManager("CH_SOURCE", cast=list)
+DestiM = KeyManager("CH_DESTINATIONS", cast=list)
 
 
 async def autopost_func(e):
     if not udB.get_key("AUTOPOST"):
         return
-    x = get_source_channels()
+    x = SourceM.get()
     th = await e.get_chat()
     if get_peer_id(th) not in x:
         return
-    y = get_destinations()
+    y = DestiM.get()
     for ys in y:
         try:
             await e.client.send_message(int(ys), e.message)
@@ -107,20 +74,19 @@ async def _(e):
 
 @ultroid_cmd(pattern="asource (.*)")
 async def source(e):
-    x = e.pattern_match.group(1).strip()
-    if not x:
-        y = e.chat_id
-    else:
+    if x := e.pattern_match.group(1).strip():
         try:
             y = await e.client.parse_id(x)
         except Exception as er:
             LOGS.exception(er)
             return
-    if not is_source_channel_added(y):
-        add_source_channel(y)
+    else:
+        y = e.chat_id
+    if not SourceM.contains(y):
+        SourceM.add(y)
         await e.eor(get_string("cha_2"))
         ultroid_bot.add_handler(autopost_func, events.NewMessage())
-    elif is_source_channel_added(y):
+    else:
         await e.eor(get_string("cha_3"))
 
 
@@ -141,24 +107,21 @@ async def dd(event):
             return
     else:
         y = event.chat_id
-    if is_source_channel_added(y):
-        rem_source_channel(y)
-        await eor(x, get_string("cha_5"), time=3)
-    elif is_source_channel_added(y):
-        rem_source_channel(y)
+    if SourceM.contains(y):
+        SourceM.remove(y)
         await eor(x, get_string("cha_5"), time=5)
-    elif not is_source_channel_added(y):
+    else:
         await eor(x, "Source channel is already removed from database. ", time=3)
 
 
 @ultroid_cmd(pattern="listsource")
 async def list_all(event):
     x = await event.eor(get_string("com_1"))
-    num = get_no_source_channels()
+    num = SourceM.count()
     if not num:
         return await eor(x, "No chats were added.", time=5)
     msg = get_string("cha_8")
-    channels = get_source_channels()
+    channels = SourceM.get()
     for channel in channels:
         name = ""
         try:
@@ -166,18 +129,16 @@ async def list_all(event):
         except BaseException:
             name = ""
         msg += f"\n=> **{name}** [`{channel}`]"
-    msg += f"\nTotal {get_no_source_channels()} channels."
+    msg += f"\nTotal {num} channels."
     if len(msg) > 4096:
         MSG = msg.replace("*", "").replace("`", "")
         with io.BytesIO(str.encode(MSG)) as out_file:
             out_file.name = "channels.txt"
-            await event.client.send_file(
-                event.chat_id,
-                out_file,
+            await event.reply(
+                "Channels in database",
+                file=out_file,
                 force_document=True,
                 allow_cache=False,
-                caption="Channels in database",
-                reply_to=event,
             )
             await x.delete()
     else:
@@ -186,8 +147,7 @@ async def list_all(event):
 
 @ultroid_cmd(pattern="adest (.*)")
 async def destination(e):
-    x = e.pattern_match.group(1).strip()
-    if x:
+    if x := e.pattern_match.group(1).strip():
         try:
             y = await e.client.parse_id(x)
         except Exception as er:
@@ -195,10 +155,10 @@ async def destination(e):
             return
     else:
         y = e.chat_id
-    if not is_destination_added(y):
-        add_destination(y)
+    if not DestiM.contains(y):
+        DestiM.add(y)
         await e.eor("Destination added succesfully")
-    elif is_destination_added(y):
+    else:
         await e.eor("Destination channel already added")
 
 
@@ -219,13 +179,10 @@ async def dd(event):
             return
     else:
         y = event.chat_id
-    if is_destination_added(y):
-        rem_destination(y)
+    if DestiM.contains(y):
+        DestiM.remove(y)
         await eor(x, "Destination removed from database")
-    elif is_destination_added(y):
-        rem_destination(y)
-        await eor(x, "Destination removed from database", time=5)
-    elif not is_destination_added(y):
+    else:
         await eor(x, "Destination channel is already removed from database. ", time=5)
 
 
@@ -233,8 +190,8 @@ async def dd(event):
 async def list_all(event):
     ultroid_bot = event.client
     x = await event.eor(get_string("com_1"))
-    channels = get_destinations()
-    num = get_no_destinations()
+    channels = DestiM.get()
+    num = len(channels)
     if not num:
         return await eor(x, "No chats were added.", time=5)
     msg = get_string("cha_7")
@@ -245,7 +202,7 @@ async def list_all(event):
         except BaseException:
             name = ""
         msg += f"\n=> **{name}** [`{channel}`]"
-    msg += f"\nTotal {get_no_destinations()} channels."
+    msg += f"\nTotal {num} channels."
     if len(msg) > 4096:
         MSG = msg.replace("*", "").replace("`", "")
         with io.BytesIO(str.encode(MSG)) as out_file:

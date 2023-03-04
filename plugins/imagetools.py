@@ -177,11 +177,9 @@ async def ult_tools(event):
         ish = centers[labels.flatten()]
         ultroid = ish.reshape(ult.shape)
     cv2.imwrite("ult.jpg", ultroid)
-    await event.client.send_file(
-        event.chat_id,
-        "ult.jpg",
+    await ureply.reply(
+        file="ult.jpg",
         force_document=False,
-        reply_to=event.reply_to_msg_id,
     )
     await xx.delete()
     os.remove("ult.jpg")
@@ -190,16 +188,13 @@ async def ult_tools(event):
 
 @ultroid_cmd(pattern="csample (.*)")
 async def sampl(ult):
-    color = ult.pattern_match.group(1).strip()
-    if color:
+    if color := ult.pattern_match.group(1).strip():
         img = Image.new("RGB", (200, 100), f"{color}")
         img.save("csample.png")
         try:
             try:
                 await ult.delete()
-                await ult.client.send_message(
-                    ult.chat_id, f"Colour Sample for `{color}` !", file="csample.png"
-                )
+                await ult.respond(f"Colour Sample for `{color}` !", file="csample.png")
             except MessageDeleteForbiddenError:
                 await ult.reply(f"Colour Sample for `{color}` !", file="csample.png")
         except ChatSendMediaForbiddenError:
@@ -223,7 +218,7 @@ async def ultd(event):
         await xx.edit(get_string("sts_9"))
     file = await con.convert(ultt, convert_to="png", outname="ult")
     got = upf(file)
-    lnk = f"https://telegra.ph{got[0]}"
+    lnk = f"https://graph.org{got[0]}"
     r = await async_searcher(
         f"https://nekobot.xyz/api/imagegen?type=blurpify&image={lnk}", re_json=True
     )
@@ -276,7 +271,7 @@ async def ok(event):
 @ultroid_cmd(pattern="pixelator( (.*)|$)")
 async def pixelator(event):
     reply_message = await event.get_reply_message()
-    if not (reply_message and reply_message.photo):
+    if not (reply_message and (reply_message.photo or reply_message.sticker)):
         return await event.eor("`Reply to a photo`")
     hw = 50
     try:
